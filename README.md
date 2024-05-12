@@ -1,0 +1,2 @@
+# mongopiet
+ Golang MongoDB wrapper
