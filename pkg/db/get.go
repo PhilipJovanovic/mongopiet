@@ -9,6 +9,10 @@ import (
 )
 
 func FindOne[T any](collection string, filter bson.M) (*T, error) {
+	if DB == nil {
+		return nil, ErrNoDB
+	}
+
 	var t T
 
 	if err := DB.Collection(collection).FindOne(ctx, filter).Decode(&t); err != nil {
@@ -19,6 +23,10 @@ func FindOne[T any](collection string, filter bson.M) (*T, error) {
 }
 
 func FindOneOpts[T any](collection string, filter bson.M, opts *options.FindOneOptions) (*T, error) {
+	if DB == nil {
+		return nil, ErrNoDB
+	}
+
 	var t T
 
 	if err := DB.Collection(collection).FindOne(ctx, filter, opts).Decode(&t); err != nil {
@@ -29,6 +37,10 @@ func FindOneOpts[T any](collection string, filter bson.M, opts *options.FindOneO
 }
 
 func Find[T any](collection string, filter bson.M) (*[]T, error) {
+	if DB == nil {
+		return nil, ErrNoDB
+	}
+
 	arr := []T{}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -52,4 +64,12 @@ func Find[T any](collection string, filter bson.M) (*[]T, error) {
 	}
 
 	return &arr, nil
+}
+
+func CountDocuments(collection string, filter interface{}) (int64, error) {
+	if DB == nil {
+		return 0, ErrNoDB
+	}
+
+	return DB.Collection(collection).CountDocuments(ctx, filter)
 }

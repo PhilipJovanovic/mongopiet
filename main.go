@@ -29,14 +29,19 @@ func NewClient(url, database string) error {
 //
 // Example:
 //
-//	err := mongopiet.RegisterIndexes([]db.CollectionIndex{
+//	err := mongopiet.RegisterIndexes([]db.CollectionIndex{{
 //		Collection: "users",
 //		Index: []mongo.IndexModel{
 //			{
 //				Keys:    bson.D{{Key: "username", Value: 1}},
 //				Options: options.Index().SetUnique(true),
 //			},
-//	})
+//			{
+//				Keys:    bson.D{{Key: "email", Value: 1}},
+//				Options: options.Index().SetUnique(true),
+//			},
+//		},
+//	}})
 func RegisterIndexes(indexes []db.CollectionIndex) error {
 	for _, index := range indexes {
 		_, err := db.DB.Collection(index.Collection).Indexes().CreateMany(context.TODO(), index.Index)
