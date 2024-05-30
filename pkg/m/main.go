@@ -2,12 +2,10 @@ package m
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -147,11 +145,15 @@ func (b *Coll[T]) Save() (*mongo.UpdateResult, error) {
 		}
 	}
 
-	fmt.Println("SET")
-	spew.Dump(set)
+	/* fmt.Println("SET")
+	for k, v := range set {
+		fmt.Println(k, v)
+	}
 
 	fmt.Println("UNSET")
-	spew.Dump(unset)
+	for k, v := range unset {
+		fmt.Println(k, v)
+	} */
 
 	if len(unset) > 0 {
 		return db.UpdateOne(b.CollectionName(), filter, set, unset)

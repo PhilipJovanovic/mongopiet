@@ -93,17 +93,17 @@ func TestFind(t *testing.T) {
 
 	n.Model.Are = append(n.Model.Are, "Test")
 	n.Model.Number = 420
-
 	n.Model.Nested = Nested{}
+	n.Model.Nested.Data = "Data"
 
-	n.Model.NestedPtr = &Nested{
+	/* n.Model.NestedPtr = &Nested{
 		Data: "Data",
 	}
 
-	n.Model.NestedPtr.NNPtr = nil /* &NN{
+	n.Model.NestedPtr.NNPtr =  &NN{
 		Value: "Value2",
 		Name:  "Name",
-	} */
-
+	}
+	*/
 	n.Save()
 }
