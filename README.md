@@ -4,9 +4,15 @@ Golang MongoDB wrapper
 
 ### Readme TODO
 
+## How to init
+
+```go
+
+```
+
 ## Primary Field for .Save()
 
-# Use of ID
+### Use of ID
 
 ```go
 type Test struct {
@@ -19,7 +25,7 @@ type Test struct {
 }
 ```
 
-# Use of the `primary` flag
+### Use of the `primary` flag
 
 ```go
 type Test struct {

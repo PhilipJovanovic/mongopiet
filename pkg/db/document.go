@@ -189,10 +189,10 @@ func (b *Document[T]) Save() (*mongo.UpdateResult, error) {
 	} */
 
 	if len(unset) > 0 {
-		return db.UpdateOne(b.CollectionName(), filter, set, unset)
+		return UpdateOne(b.CollectionName(), filter, set, unset)
 	}
 
-	return db.UpdateOne(b.CollectionName(), filter, set, nil)
+	return UpdateOne(b.CollectionName(), filter, set, nil)
 }
 
 // *: check behaviour with array, slices
