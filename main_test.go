@@ -8,7 +8,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.philip.id/mongopiet/pkg/m"
+	"go.philip.id/mongopiet/pkg/db"
 )
 
 const (
@@ -40,8 +40,8 @@ type Test struct {
 	UpdatedAt time.Time          `bson:"updatedAt"`
 }
 
-type TestDoc = m.Document[Test]
-type TestDocs = m.ManyDocuments[Test]
+type TestDoc = db.Document[Test]
+type TestDocs = db.ManyDocuments[Test]
 
 func TestMain(t *testing.T) {
 	if err := NewClient(CONNECTION_URL, DATABASE); err != nil {
@@ -63,7 +63,7 @@ func TestManual(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
-	n := m.NewDoc(&Test{
+	n := db.NewDoc(&Test{
 		ID:        primitive.NewObjectID(),
 		Name:      "Test",
 		Number:    420,
