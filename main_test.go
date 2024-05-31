@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	CONNECTION_URL = "mongodb://nofy:qNl0tVerb6nf9DGY@db.slabs.io/nofy?authSource=nofy"
-	DATABASE       = "nofy"
+	CONNECTION_URL = ""
+	DATABASE       = ""
 )
 
 type NN struct {
@@ -40,7 +40,8 @@ type Test struct {
 	UpdatedAt time.Time          `bson:"updatedAt"`
 }
 
-type TestColl = m.Coll[Test]
+type TestDoc = m.Document[Test]
+type TestDocs = m.ManyDocuments[Test]
 
 func TestMain(t *testing.T) {
 	if err := NewClient(CONNECTION_URL, DATABASE); err != nil {
@@ -51,7 +52,7 @@ func TestMain(t *testing.T) {
 }
 
 func TestManual(t *testing.T) {
-	b := &TestColl{
+	b := &TestDoc{
 		Model: &Test{
 			ID:   primitive.NewObjectID(),
 			Name: "Test",
@@ -78,13 +79,13 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestFind(t *testing.T) {
+func TestFindOne(t *testing.T) {
 	id, err := primitive.ObjectIDFromHex("66513865b71f6f4b13d40503")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	n := &TestColl{}
+	n := &TestDoc{}
 
 	_, err = n.FindOne(bson.M{"_id": id})
 	if err != nil {
@@ -106,4 +107,15 @@ func TestFind(t *testing.T) {
 	}
 	*/
 	n.Save()
+}
+
+func TestFind(t *testing.T) {
+	n := &TestDocs{}
+
+	_, err := n.Find(bson.M{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	spew.Dump(n)
 }

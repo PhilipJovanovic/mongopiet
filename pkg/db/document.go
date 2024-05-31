@@ -1,4 +1,4 @@
-package m
+package db
 
 import (
 	"errors"
@@ -9,17 +9,26 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.philip.id/mongopiet/pkg/db"
 )
 
 var NilTime = time.Time{}
 
-type Coll[T any] struct {
+type Document[T any] struct {
 	// model
 	Model *T
 
 	// is being used for comparing differences
 	initial *T
+
+	// Meta Flags
+	IsTimeSeries bool
+}
+
+type ManyDocuments[T any] struct {
+	// model
+	Models []Document[T]
+
+	fix *T
 
 	// Meta Flags
 	IsTimeSeries bool
@@ -31,8 +40,8 @@ type Key struct {
 	Omitempty bool
 }
 
-func NewDoc[T any](o *T) *Coll[T] {
-	c := &Coll[T]{
+func NewDoc[T any](o *T) *Document[T] {
+	c := &Document[T]{
 		Model: o,
 	}
 
@@ -42,7 +51,7 @@ func NewDoc[T any](o *T) *Coll[T] {
 	return c
 }
 
-func (b *Coll[T]) CollectionName() string {
+func (b *Document[T]) CollectionName() string {
 	c := strings.ToLower(reflect.ValueOf(b.Model).Type().Elem().Name()) + "s"
 	if b.IsTimeSeries {
 		c += "_ts"
@@ -51,8 +60,17 @@ func (b *Coll[T]) CollectionName() string {
 	return c
 }
 
-func (b *Coll[T]) FindOne(filter primitive.M) (*Coll[T], error) {
-	m, err := db.FindOne[T](b.CollectionName(), filter)
+func (b *ManyDocuments[T]) CollectionName() string {
+	c := strings.ToLower(reflect.ValueOf(b.fix).Type().Elem().Name()) + "s"
+	if b.IsTimeSeries {
+		c += "_ts"
+	}
+
+	return c
+}
+
+func (b *Document[T]) FindOne(filter primitive.M) (*Document[T], error) {
+	m, err := FindOne[T](b.CollectionName(), filter)
 	if err != nil {
 		return nil, err
 	}
@@ -69,8 +87,23 @@ func (b *Coll[T]) FindOne(filter primitive.M) (*Coll[T], error) {
 	return b, nil
 }
 
+func (b *ManyDocuments[T]) Find(filter primitive.M) (*ManyDocuments[T], error) {
+	m, err := Find[T](b.CollectionName(), filter)
+	if err != nil {
+		return nil, err
+	}
+
+	b.Models = make([]Document[T], len(*m))
+
+	for i, v := range *m {
+		b.Models[i] = *NewDoc(&v)
+	}
+
+	return b, nil
+}
+
 // checkFields checks if the fields are empty and fills them with default values
-func (b *Coll[T]) checkFields() {
+func (b *Document[T]) checkFields() {
 	fields := reflect.ValueOf(b.Model).Elem()
 
 	for j := 0; j < fields.NumField(); j++ {
@@ -92,10 +125,10 @@ func (b *Coll[T]) checkFields() {
 	}
 }
 
-func (b *Coll[T]) Create() (*mongo.InsertOneResult, error) {
+func (b *Document[T]) Create() (*mongo.InsertOneResult, error) {
 	b.checkFields()
 
-	res, err := db.InsertOne(b.CollectionName(), b.Model)
+	res, err := InsertOne(b.CollectionName(), b.Model)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +143,7 @@ func (b *Coll[T]) Create() (*mongo.InsertOneResult, error) {
 //
 // Finds the document by the `_id` field or any field tagged with primary
 // and updates the fields that have changed
-func (b *Coll[T]) Save() (*mongo.UpdateResult, error) {
+func (b *Document[T]) Save() (*mongo.UpdateResult, error) {
 	fields := reflect.ValueOf(b.Model).Elem()
 	fType := fields.Type()
 
