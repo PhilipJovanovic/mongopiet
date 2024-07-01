@@ -80,7 +80,8 @@ func TestNew(t *testing.T) {
 }
 
 func TestFindOne(t *testing.T) {
-	id, err := primitive.ObjectIDFromHex("66513865b71f6f4b13d40503")
+	id, err := primitive.ObjectIDFromHex("XXXXXX")
+
 	if err != nil {
 		log.Fatal(err)
 	}
