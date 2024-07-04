@@ -8,6 +8,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// Returns a single document in the collection
+//
+// Returns error if document not found
 func FindOne[T any](collection string, filter bson.M) (*T, error) {
 	if DB == nil {
 		return nil, ErrNoDB
@@ -22,6 +25,9 @@ func FindOne[T any](collection string, filter bson.M) (*T, error) {
 	return &t, nil
 }
 
+// Returns a single document in the collection with options
+//
+// Returns error if document not found
 func FindOneOpts[T any](collection string, filter bson.M, opts *options.FindOneOptions) (*T, error) {
 	if DB == nil {
 		return nil, ErrNoDB
@@ -36,6 +42,7 @@ func FindOneOpts[T any](collection string, filter bson.M, opts *options.FindOneO
 	return &t, nil
 }
 
+// Returns multiple documents in the collection
 func Find[T any](collection string, filter bson.M) (*[]T, error) {
 	if DB == nil {
 		return nil, ErrNoDB
@@ -66,6 +73,7 @@ func Find[T any](collection string, filter bson.M) (*[]T, error) {
 	return &arr, nil
 }
 
+// Counts documents in the collection
 func CountDocuments(collection string, filter interface{}) (int64, error) {
 	if DB == nil {
 		return 0, ErrNoDB

@@ -8,6 +8,7 @@ import (
 	"go.philip.id/mongopiet/pkg/db"
 )
 
+// Creates a new mongodb connection and pings the database
 func NewClient(url, database string) error {
 	clientOptions := options.Client().ApplyURI(url)
 

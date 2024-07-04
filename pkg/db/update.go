@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// UpdateOne updates a single document in the collection
 func UpdateOne(coll string, filter, set, unset interface{}) (*mongo.UpdateResult, error) {
 	if DB == nil {
 		return nil, ErrNoDB

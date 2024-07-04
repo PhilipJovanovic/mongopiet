@@ -40,6 +40,9 @@ type Key struct {
 	Omitempty bool
 }
 
+// Creates a new document and initializes it with the given data.
+//
+// This Method is needed if you want to use the .save() method
 func NewDoc[T any](o *T) *Document[T] {
 	c := &Document[T]{
 		Model: o,
@@ -51,6 +54,7 @@ func NewDoc[T any](o *T) *Document[T] {
 	return c
 }
 
+// Returns the name of the collection based on the struct name (mainly used internaly)
 func (b *Document[T]) CollectionName() string {
 	c := strings.ToLower(reflect.ValueOf(b.Model).Type().Elem().Name()) + "s"
 	if b.IsTimeSeries {
@@ -60,6 +64,7 @@ func (b *Document[T]) CollectionName() string {
 	return c
 }
 
+// Returns the name of the collection based on the struct name (mainly used internaly)
 func (b *ManyDocuments[T]) CollectionName() string {
 	c := strings.ToLower(reflect.ValueOf(b.fix).Type().Elem().Name()) + "s"
 	if b.IsTimeSeries {
@@ -69,6 +74,7 @@ func (b *ManyDocuments[T]) CollectionName() string {
 	return c
 }
 
+// Sets the document to the current model
 func (b *Document[T]) FindOne(filter primitive.M) (*Document[T], error) {
 	m, err := FindOne[T](b.CollectionName(), filter)
 	if err != nil {
@@ -87,6 +93,7 @@ func (b *Document[T]) FindOne(filter primitive.M) (*Document[T], error) {
 	return b, nil
 }
 
+// Sets the document to the current models
 func (b *ManyDocuments[T]) Find(filter primitive.M) (*ManyDocuments[T], error) {
 	m, err := Find[T](b.CollectionName(), filter)
 	if err != nil {
@@ -102,7 +109,7 @@ func (b *ManyDocuments[T]) Find(filter primitive.M) (*ManyDocuments[T], error) {
 	return b, nil
 }
 
-// checkFields checks if the fields are empty and fills them with default values
+// [internally] checkFields checks if the fields are empty and fills them with default values
 func (b *Document[T]) checkFields() {
 	fields := reflect.ValueOf(b.Model).Elem()
 
@@ -125,6 +132,7 @@ func (b *Document[T]) checkFields() {
 	}
 }
 
+// Creates a new db entry and initializes the struct
 func (b *Document[T]) Create() (*mongo.InsertOneResult, error) {
 	b.checkFields()
 
@@ -143,6 +151,14 @@ func (b *Document[T]) Create() (*mongo.InsertOneResult, error) {
 //
 // Finds the document by the `_id` field or any field tagged with primary
 // and updates the fields that have changed
+//
+// Primary tag:
+//
+//	type User struct {
+//		Username  string         	 `bson:"username,primary"`
+//		CreatedAt time.Time          `bson:"createdAt"`
+//		UpdatedAt time.Time          `bson:"updatedAt"`
+//	}
 func (b *Document[T]) Save() (*mongo.UpdateResult, error) {
 	fields := reflect.ValueOf(b.Model).Elem()
 	fType := fields.Type()
@@ -177,16 +193,6 @@ func (b *Document[T]) Save() (*mongo.UpdateResult, error) {
 			deepCompare(k, &field, &iField, set, unset)
 		}
 	}
-
-	/* fmt.Println("SET")
-	for k, v := range set {
-		fmt.Println(k, v)
-	}
-
-	fmt.Println("UNSET")
-	for k, v := range unset {
-		fmt.Println(k, v)
-	} */
 
 	if len(unset) > 0 {
 		return UpdateOne(b.CollectionName(), filter, set, unset)

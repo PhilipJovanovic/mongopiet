@@ -161,3 +161,4 @@ func main() {
 ## TODO
 
 -   Add propagation
+-   Limits etc
