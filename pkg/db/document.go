@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var NilTime = time.Time{}
@@ -75,8 +76,8 @@ func (b *ManyDocuments[T]) CollectionName() string {
 }
 
 // Sets the document to the current model
-func (b *Document[T]) FindOne(filter primitive.M) (*Document[T], error) {
-	m, err := FindOne[T](b.CollectionName(), filter)
+func (b *Document[T]) FindOne(filter primitive.M, opts ...*options.FindOneOptions) (*Document[T], error) {
+	m, err := FindOne[T](b.CollectionName(), filter, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -94,8 +95,8 @@ func (b *Document[T]) FindOne(filter primitive.M) (*Document[T], error) {
 }
 
 // Sets the document to the current models
-func (b *ManyDocuments[T]) Find(filter primitive.M) (*ManyDocuments[T], error) {
-	m, err := Find[T](b.CollectionName(), filter)
+func (b *ManyDocuments[T]) Find(filter primitive.M, opts ...*options.FindOptions) (*ManyDocuments[T], error) {
+	m, err := Find[T](b.CollectionName(), filter, opts...)
 	if err != nil {
 		return nil, err
 	}
