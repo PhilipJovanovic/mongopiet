@@ -42,6 +42,7 @@ type Key struct {
 }
 
 // Creates a new document and initializes it with the given data.
+// If you want to insert it directly into the database use .CreateDoc instead.
 //
 // This Method is needed if you want to use the .save() method
 func NewDoc[T any](o *T) *Document[T] {
@@ -53,6 +54,26 @@ func NewDoc[T any](o *T) *Document[T] {
 	c.initial = &copy
 
 	return c
+}
+
+// Creates a new document and inserts it in the database.
+// If you don't want to push it to the database use .NewDoc instead.
+//
+// This Method is needed if you want to use the .save() method
+func CreateDoc[T any](o *T) (*Document[T], error) {
+	c := &Document[T]{
+		Model: o,
+	}
+
+	copy := *o
+	c.initial = &copy
+
+	_, err := c.Create()
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
 // Returns the name of the collection based on the struct name (mainly used internaly)
