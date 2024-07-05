@@ -11,31 +11,14 @@ import (
 // Returns a single document in the collection
 //
 // Returns error if document not found
-func FindOne[T any](collection string, filter bson.M) (*T, error) {
+func FindOne[T any](collection string, filter bson.M, opts ...*options.FindOneOptions) (*T, error) {
 	if DB == nil {
 		return nil, ErrNoDB
 	}
 
 	var t T
 
-	if err := DB.Collection(collection).FindOne(ctx, filter).Decode(&t); err != nil {
-		return nil, err
-	}
-
-	return &t, nil
-}
-
-// Returns a single document in the collection with options
-//
-// Returns error if document not found
-func FindOneOpts[T any](collection string, filter bson.M, opts *options.FindOneOptions) (*T, error) {
-	if DB == nil {
-		return nil, ErrNoDB
-	}
-
-	var t T
-
-	if err := DB.Collection(collection).FindOne(ctx, filter, opts).Decode(&t); err != nil {
+	if err := DB.Collection(collection).FindOne(ctx, filter, opts...).Decode(&t); err != nil {
 		return nil, err
 	}
 
@@ -43,7 +26,7 @@ func FindOneOpts[T any](collection string, filter bson.M, opts *options.FindOneO
 }
 
 // Returns multiple documents in the collection
-func Find[T any](collection string, filter bson.M) (*[]T, error) {
+func Find[T any](collection string, filter bson.M, opts ...*options.FindOptions) (*[]T, error) {
 	if DB == nil {
 		return nil, ErrNoDB
 	}
@@ -53,7 +36,7 @@ func Find[T any](collection string, filter bson.M) (*[]T, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	cur, err := DB.Collection(collection).Find(ctx, filter)
+	cur, err := DB.Collection(collection).Find(ctx, filter, opts...)
 	if err != nil {
 		return nil, err
 	}
