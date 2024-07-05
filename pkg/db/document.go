@@ -97,14 +97,16 @@ func (b *ManyDocuments[T]) CollectionName() string {
 }
 
 // Sets the document to the current model
+//
+// Returns nil, nil if document has not been found (no ErrNoDocuments error)
 func (b *Document[T]) FindOne(filter primitive.M, opts ...*options.FindOneOptions) (*Document[T], error) {
 	m, err := FindOne[T](b.CollectionName(), filter, opts...)
 	if err != nil {
-		return nil, err
-	}
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
 
-	if m == nil {
-		return nil, errors.New("document not found")
+		return nil, err
 	}
 
 	b.Model = m
