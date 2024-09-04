@@ -1,6 +1,7 @@
 package db
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
 	"strings"
@@ -27,7 +28,7 @@ type Document[T any] struct {
 
 type ManyDocuments[T any] struct {
 	// model
-	Models []Document[T]
+	Models []*Document[T]
 
 	fix *T
 
@@ -117,6 +118,10 @@ func (b *Document[T]) FindOne(filter primitive.M, opts ...*options.FindOneOption
 	return b, nil
 }
 
+func (b *Document[T]) MarshalJSON() ([]byte, error) {
+	return json.Marshal(b.Model)
+}
+
 // Sets the document to the current models
 func (b *ManyDocuments[T]) Find(filter primitive.M, opts ...*options.FindOptions) (*ManyDocuments[T], error) {
 	m, err := Find[T](b.CollectionName(), filter, opts...)
@@ -124,13 +129,17 @@ func (b *ManyDocuments[T]) Find(filter primitive.M, opts ...*options.FindOptions
 		return nil, err
 	}
 
-	b.Models = make([]Document[T], len(*m))
+	b.Models = make([]*Document[T], len(*m))
 
-	for i, v := range *m {
-		b.Models[i] = *NewDoc(&v)
+	for i := range *m {
+		b.Models[i] = NewDoc(&(*m)[i])
 	}
 
 	return b, nil
+}
+
+func (b *ManyDocuments[T]) MarshalJSON() ([]byte, error) {
+	return json.Marshal(b.Models)
 }
 
 // [internally] checkFields checks if the fields are empty and fills them with default values

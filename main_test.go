@@ -1,6 +1,8 @@
 package mongopiet
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"testing"
 	"time"
@@ -48,7 +50,7 @@ func TestMain(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	TestFind(t)
+	TestMany(t)
 }
 
 func TestManual(t *testing.T) {
@@ -119,4 +121,25 @@ func TestFind(t *testing.T) {
 	}
 
 	spew.Dump(n)
+}
+
+type Customer struct {
+	ID    primitive.ObjectID `bson:"_id" json:"id"`
+	Email string             `bson:"email" json:"email"`
+}
+type CustomerDocs = db.ManyDocuments[Customer]
+
+func TestMany(t *testing.T) {
+	n := &CustomerDocs{}
+
+	if _, err := n.Find(bson.M{}); err != nil {
+		log.Fatal(err)
+	}
+
+	data, err := json.Marshal(n)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("data: %s\n", data)
 }

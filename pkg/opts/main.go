@@ -80,39 +80,26 @@ type Request interface {
 //	}
 func QueryParam(r Request, sortField string) *options.FindOptions {
 	opt := options.Find()
-	change := false
 
 	page := r.FormValue("page")
 	limit := r.FormValue("limit")
 
-	// add pagination
-	if page != "" && limit != "" {
-		skip, mongolimit, err := SkipLimit(page, limit)
-		if err != nil {
-			return nil
-		}
-
-		opt.SetSkip(skip)
-		opt.SetLimit(mongolimit)
-		change = true
+	skip, mongolimit, err := SkipLimit(page, limit)
+	if err != nil {
+		return nil
 	}
 
-	sort := r.FormValue("sort")
+	opt.SetSkip(skip)
+	opt.SetLimit(mongolimit)
 
 	// add sorting based on sortfield
-	if sort != "" {
+	if sort := r.FormValue("sort"); sort != "" {
 		if sort == "asc" {
 			opt.SetSort(bson.M{sortField: 1})
 		} else {
 			opt.SetSort(bson.M{sortField: -1})
 		}
-
-		change = true
 	}
 
-	if change {
-		return opt
-	}
-
-	return nil
+	return opt
 }
