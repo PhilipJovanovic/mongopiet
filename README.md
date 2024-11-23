@@ -32,7 +32,58 @@ func main() {
 }
 ```
 
-## Use of document struct
+## Basic usage
+
+```go
+import (
+	"go.philip.id/mongopiet/db"
+)
+
+func main() {
+	newUser := &User{
+		ID: primitive.NewObjectID(),
+		Name: "SNWZY",
+		UpdatedAt: time.Now(),
+		CreatedAt: time.Now(),
+	}
+
+	// Create
+	_, err := db.InsertOne("user", newUser)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Find
+	user, err := db.FindOne[User]("user", bson.M{"_id": newUser.ID})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Find Many
+	users, err := db.Find[User]("user", bson.M{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	spew.Dump(users)
+
+	// Update
+	_, err := db.UpdateOne("user", bson.M{"_id": newUser.ID}, bson.M{"name": "SNWZY1"})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Delete
+	_, err := db.DeleteOne("user", bson.M{"_id": newUser.ID})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// ... and a few more: InsertMany, CountDocuments, UpdateMany, DeleteMany, Aggregate, BulkWrite
+}
+```
+
+## Use of document struct (still experimental)
 
 ### Primary Field for .Save()
 
@@ -107,58 +158,7 @@ func main() {
 }
 ```
 
-## Use of helper functions
-
-```go
-import (
-	"go.philip.id/mongopiet/db"
-)
-
-func main() {
-	newUser := &User{
-		ID: primitive.NewObjectID(),
-		Name: "SNWZY",
-		UpdatedAt: time.Now(),
-		CreatedAt: time.Now(),
-	}
-
-	// Create
-	_, err := db.InsertOne("user", newUser)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Find
-	user, err := db.FindOne[User]("user", bson.M{"_id": newUser.ID})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Find Many
-	users, err := db.Find[User]("user", bson.M{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	spew.Dump(users)
-
-	// Update
-	_, err := db.UpdateOne("user", bson.M{"_id": newUser.ID}, bson.M{"name": "SNWZY1"})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Delete
-	_, err := db.DeleteOne("user", bson.M{"_id": newUser.ID})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// ... and a few more
-}
-```
-
 ## TODO
 
--   Add propagation
--   Limits etc
+- Add propagation
+- Limits etc

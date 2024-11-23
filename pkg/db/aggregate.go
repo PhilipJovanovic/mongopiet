@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// runs an aggregation pipeline on the collection
 func Aggregate[T any](collection string, pipeline interface{}, opts ...*options.AggregateOptions) (*[]T, error) {
 	if DB == nil {
 		return nil, ErrNoDB

@@ -57,10 +57,10 @@ func Find[T any](collection string, filter bson.M, opts ...*options.FindOptions)
 }
 
 // Counts documents in the collection
-func CountDocuments(collection string, filter interface{}) (int64, error) {
+func CountDocuments(collection string, filter interface{}, opts ...*options.CountOptions) (int64, error) {
 	if DB == nil {
 		return 0, ErrNoDB
 	}
 
-	return DB.Collection(collection).CountDocuments(ctx, filter)
+	return DB.Collection(collection).CountDocuments(ctx, filter, opts...)
 }

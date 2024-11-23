@@ -10,6 +10,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.philip.id/mongopiet/pkg/bulk"
 	"go.philip.id/mongopiet/pkg/db"
 )
 
@@ -50,7 +51,7 @@ func TestMain(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	TestMany(t)
+	TestBulkWrite(t)
 }
 
 func TestManual(t *testing.T) {
@@ -142,4 +143,21 @@ func TestMany(t *testing.T) {
 	}
 
 	fmt.Printf("data: %s\n", data)
+}
+
+func TestBulkWrite(t *testing.T) {
+	ms := []bulk.Write{
+		&bulk.Insert{Document: &Customer{
+			ID:    primitive.NewObjectID(),
+			Email: "test1@lol.de",
+		}},
+		&bulk.Insert{Document: Customer{
+			ID:    primitive.NewObjectID(),
+			Email: "test2@lol.de",
+		}},
+	}
+
+	if _, err := db.BulkWrite("pods", ms); err != nil {
+		log.Fatal(err)
+	}
 }
