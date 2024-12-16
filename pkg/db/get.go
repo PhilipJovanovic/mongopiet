@@ -26,12 +26,12 @@ func FindOne[T any](collection string, filter bson.M, opts ...*options.FindOneOp
 }
 
 // Returns multiple documents in the collection
-func Find[T any](collection string, filter bson.M, opts ...*options.FindOptions) (*[]T, error) {
+func Find[T any](collection string, filter bson.M, opts ...*options.FindOptions) ([]*T, error) {
 	if DB == nil {
 		return nil, ErrNoDB
 	}
 
-	arr := []T{}
+	arr := []*T{}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -50,10 +50,10 @@ func Find[T any](collection string, filter bson.M, opts ...*options.FindOptions)
 			return nil, err
 		}
 
-		arr = append(arr, a)
+		arr = append(arr, &a)
 	}
 
-	return &arr, nil
+	return arr, nil
 }
 
 // Counts documents in the collection

@@ -129,10 +129,10 @@ func (b *ManyDocuments[T]) Find(filter primitive.M, opts ...*options.FindOptions
 		return nil, err
 	}
 
-	b.Models = make([]*Document[T], len(*m))
+	b.Models = make([]*Document[T], len(m))
 
-	for i := range *m {
-		b.Models[i] = NewDoc(&(*m)[i])
+	for i := range m {
+		b.Models[i] = NewDoc(m[i])
 	}
 
 	return b, nil
