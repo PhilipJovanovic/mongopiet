@@ -8,12 +8,12 @@ import (
 )
 
 // runs an aggregation pipeline on the collection
-func Aggregate[T any](collection string, pipeline interface{}, opts ...*options.AggregateOptions) (*[]T, error) {
+func Aggregate[T any](collection string, pipeline interface{}, opts ...*options.AggregateOptions) ([]*T, error) {
 	if DB == nil {
 		return nil, ErrNoDB
 	}
 
-	arr := []T{}
+	arr := []*T{}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -32,8 +32,8 @@ func Aggregate[T any](collection string, pipeline interface{}, opts ...*options.
 			return nil, err
 		}
 
-		arr = append(arr, a)
+		arr = append(arr, &a)
 	}
 
-	return &arr, nil
+	return arr, nil
 }
