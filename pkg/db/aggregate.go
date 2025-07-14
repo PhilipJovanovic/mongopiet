@@ -37,3 +37,31 @@ func Aggregate[T any](collection string, pipeline interface{}, opts ...*options.
 
 	return arr, nil
 }
+
+// runs an aggregation pipeline on the collection with a context
+func AggregateCtx[T any](collection string, ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) ([]*T, error) {
+	if DB == nil {
+		return nil, ErrNoDB
+	}
+
+	arr := []*T{}
+
+	cur, err := DB.Collection(collection).Aggregate(ctx, pipeline, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	defer cur.Close(ctx)
+
+	for cur.Next(ctx) {
+		var a T
+
+		if err := cur.Decode(&a); err != nil {
+			return nil, err
+		}
+
+		arr = append(arr, &a)
+	}
+
+	return arr, nil
+}
