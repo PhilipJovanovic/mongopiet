@@ -44,7 +44,9 @@ across `w1nterbot`, `nofy-api`, `lutti-discord`, `inventory`, `orbe`.
 
 ## Docs (addressed in the README rewrite)
 
-- [x] Fix the import path (`go.philip.id/mongopiet/db` → `go.philip.id/mongopiet/pkg/db`).
+- [x] Flatten the package layout — `pkg/db` / `pkg/opts` / `pkg/bulk` moved to the module root
+      (`db` / `opts` / `bulk`) in v0.10.0; README uses the new paths. Consumers on older versions
+      are unaffected until they upgrade (and then update their imports).
 - [x] Fix the `UpdateOne` example (missing `unset` arg — signature is `(coll, filter, set, unset, ...)`).
 - [x] Fix the broken type-alias example (`db.Document[UserDocument]` → `db.Document[User]`).
 - [x] Document the previously-missing API: `CountDocuments`, `Aggregate`/`AggregateCtx`,
@@ -53,7 +55,7 @@ across `w1nterbot`, `nofy-api`, `lutti-discord`, `inventory`, `orbe`.
 
 ## Nice-to-have
 
-- [ ] **Tests.** No test files in the package currently — add coverage for `Save()` diffing,
-      `checkFields` (auto id/timestamps), pluralization, and the not-found paths.
+- [ ] **Expand tests.** `main_test.go` and `opts/main_test.go` exist; add coverage for `Save()`
+      diffing, `checkFields` (auto id/timestamps), pluralization, and the not-found paths.
 - [ ] CHANGELOG for the `v0.x` line.
 - [ ] Runnable example under an `_examples/` dir.

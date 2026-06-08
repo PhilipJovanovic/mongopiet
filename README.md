@@ -27,10 +27,10 @@ Two import paths:
 
 ```go
 import "go.philip.id/mongopiet"        // NewClient, RegisterIndexes (setup)
-import "go.philip.id/mongopiet/pkg/db" // FindOne, Find, InsertOne, ... (everyday queries)
+import "go.philip.id/mongopiet/db" // FindOne, Find, InsertOne, ... (everyday queries)
 ```
 
-Optional: `go.philip.id/mongopiet/pkg/opts` (pagination) and `go.philip.id/mongopiet/pkg/bulk`
+Optional: `go.philip.id/mongopiet/opts` (pagination) and `go.philip.id/mongopiet/bulk`
 (bulk write models).
 
 ## Connect
@@ -162,7 +162,7 @@ stats, err = db.AggregateCtx[DailyStat]("events", ctx, pipeline)
 The `bulk` package aliases the driver's write models so you don't import `mongo` directly:
 
 ```go
-import "go.philip.id/mongopiet/pkg/bulk"
+import "go.philip.id/mongopiet/bulk"
 
 models := []bulk.Write{
     &bulk.Insert{Document: bson.M{"x": 1}},
@@ -177,10 +177,10 @@ Available models: `bulk.Insert`, `bulk.Update`, `bulk.UpdateMany`, `bulk.Delete`
 
 ### Pagination & sorting
 
-`pkg/opts` turns request query params (`page`, `limit`, `sort`) into `*options.FindOptions`:
+The `opts` package turns request query params (`page`, `limit`, `sort`) into `*options.FindOptions`:
 
 ```go
-import "go.philip.id/mongopiet/pkg/opts"
+import "go.philip.id/mongopiet/opts"
 
 opt := opts.QueryParam(r, "createdAt") // page/limit/sort from the request
 logs, err := db.Find[RequestLog]("logs", bson.M{"relatedUser": id}, opt)
@@ -245,9 +245,9 @@ Patterns that recur across the services using mongopiet:
 
 | Package | Import                          | Description                         |
 | ------- | ------------------------------- | ----------------------------------- |
-| db      | `go.philip.id/mongopiet/pkg/db` | Typed CRUD, aggregation, bulk, docs |
-| opts    | `go.philip.id/mongopiet/pkg/opts` | Pagination / sort from requests   |
-| bulk    | `go.philip.id/mongopiet/pkg/bulk` | Bulk write model aliases          |
+| db      | `go.philip.id/mongopiet/db` | Typed CRUD, aggregation, bulk, docs |
+| opts    | `go.philip.id/mongopiet/opts` | Pagination / sort from requests   |
+| bulk    | `go.philip.id/mongopiet/bulk` | Bulk write model aliases          |
 
 ## License
 

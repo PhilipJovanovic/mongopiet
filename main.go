@@ -5,7 +5,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.philip.id/mongopiet/pkg/db"
+	"go.philip.id/mongopiet/db"
 )
 
 // Creates a new mongodb connection and pings the database

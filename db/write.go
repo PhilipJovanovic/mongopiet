@@ -3,7 +3,7 @@ package db
 import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.philip.id/mongopiet/pkg/bulk"
+	"go.philip.id/mongopiet/bulk"
 )
 
 // writes multiple actions to the database

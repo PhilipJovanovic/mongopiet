@@ -10,8 +10,8 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.philip.id/mongopiet/pkg/bulk"
-	"go.philip.id/mongopiet/pkg/db"
+	"go.philip.id/mongopiet/bulk"
+	"go.philip.id/mongopiet/db"
 )
 
 const (
