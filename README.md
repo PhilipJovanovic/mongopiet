@@ -1,164 +1,254 @@
 # mongopiet
 
-Golang MongoDB wrapper
+[![Go Reference](https://pkg.go.dev/badge/go.philip.id/mongopiet.svg)](https://pkg.go.dev/go.philip.id/mongopiet)
 
-### Readme TODO
-
-## How to init
+A lightweight, generics-based wrapper around the official
+[mongo-driver](https://go.mongodb.org/mongo-driver). It keeps you close to the driver and to
+raw `bson`, but removes the repetitive parts: typed `FindOne[T]`/`Find[T]` decoding, automatic
+`_id` and `createdAt`/`updatedAt` handling, declarative index registration, and an optional
+document wrapper with a diff-based `Save()`.
 
 ```go
-import (
-	"go.philip.id/mongopiet"
-)
+user, err := db.FindOne[User]("users", bson.M{"_id": id})        // typed, decoded for you
+users, err := db.Find[User]("users", bson.M{"active": true})     // []*User
+_, err = db.UpdateOne("users", bson.M{"_id": id}, bson.M{"name": "new"}, nil)
+```
 
-func main() {
-	if err := mongopiet.NewClient(os.Getenv("MONGO_URI"), os.Getenv("MONGO_DATABASE")); err != nil {
-		log.Fatal(err)
-	}
+It is not a full ODM — filters, updates and pipelines are plain `bson`, exactly as in the
+driver. mongopiet just types the results and handles the boilerplate.
 
+## Install
 
-	err = mongopiet.RegisterIndexes([]db.CollectionIndex{{
-		Collection: "users",
-		Index: []mongo.IndexModel{
-			{
-				Keys:    bson.D{{Key: "username", Value: 1}},
-				Options: options.Index().SetUnique(true),
-			},
-		},
-	}})
-	if err != nil {
-		log.Fatal(err)
-	}
+```sh
+go get go.philip.id/mongopiet
+```
+
+Two import paths:
+
+```go
+import "go.philip.id/mongopiet"        // NewClient, RegisterIndexes (setup)
+import "go.philip.id/mongopiet/pkg/db" // FindOne, Find, InsertOne, ... (everyday queries)
+```
+
+Optional: `go.philip.id/mongopiet/pkg/opts` (pagination) and `go.philip.id/mongopiet/pkg/bulk`
+(bulk write models).
+
+## Connect
+
+`NewClient` connects and pings; the connection is held in a package-level `db.DB`, so you
+don't pass it around. Register indexes once at startup.
+
+```go
+func init() {
+    if err := mongopiet.NewClient(os.Getenv("MONGO_URI"), os.Getenv("MONGO_DATABASE")); err != nil {
+        log.Fatal(err)
+    }
+
+    err := mongopiet.RegisterIndexes([]db.CollectionIndex{
+        {
+            Collection: "users",
+            Index: []mongo.IndexModel{
+                {Keys: bson.D{{Key: "email", Value: 1}}, Options: options.Index().SetUnique(true)},
+            },
+        },
+        {
+            Collection: "point_balance",
+            Index: []mongo.IndexModel{ // compound + unique
+                {Keys: bson.D{{Key: "broadcaster", Value: 1}, {Key: "userId", Value: 1}},
+                    Options: options.Index().SetUnique(true)},
+            },
+        },
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
 }
 ```
 
-## Basic usage
+`RegisterIndexes` is idempotent (`CreateMany` is a no-op for existing indexes) — call it on
+every boot.
 
-```go
-import (
-	"go.philip.id/mongopiet/db"
-)
+## Models
 
-func main() {
-	newUser := &User{
-		ID: primitive.NewObjectID(),
-		Name: "SNWZY",
-		UpdatedAt: time.Now(),
-		CreatedAt: time.Now(),
-	}
-
-	// Create
-	_, err := db.InsertOne("user", newUser)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Find
-	user, err := db.FindOne[User]("user", bson.M{"_id": newUser.ID})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Find Many
-	users, err := db.Find[User]("user", bson.M{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	spew.Dump(users)
-
-	// Update
-	_, err := db.UpdateOne("user", bson.M{"_id": newUser.ID}, bson.M{"name": "SNWZY1"})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Delete
-	_, err := db.DeleteOne("user", bson.M{"_id": newUser.ID})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// ... and a few more: InsertMany, CountDocuments, UpdateMany, DeleteMany, Aggregate, BulkWrite
-}
-```
-
-## Use of document struct (still experimental)
-
-### Primary Field for .Save()
-
-#### Use of ID
+A model is a plain struct with `bson` tags. Optionally declare type aliases for the document
+wrapper (see [Document wrapper](#document-wrapper)) — this is the common convention:
 
 ```go
 type User struct {
-	ID        primitive.ObjectID `bson:"_id"`
-	Name      string             `bson:"name"`
-	CreatedAt time.Time          `bson:"createdAt"`
-	UpdatedAt time.Time          `bson:"updatedAt"`
+    ID        primitive.ObjectID `bson:"_id"        json:"id"`
+    Email     string             `bson:"email"      json:"email"`
+    Name      string             `bson:"name"       json:"name"`
+    Roles     []string           `bson:"roles"      json:"roles"`
+    Avatar    *string            `bson:"avatar,omitempty" json:"avatar,omitempty"` // optional
+    CreatedAt time.Time          `bson:"createdAt"  json:"createdAt"`
+    UpdatedAt time.Time          `bson:"updatedAt"  json:"updatedAt"`
 }
+
+type UserDoc  = db.Document[User]      // single-document wrapper
+type UserDocs = db.ManyDocuments[User] // many-documents wrapper
 ```
 
-#### Use of the `primary` flag
+Conventions mongopiet relies on:
+
+- `_id` of type `primitive.ObjectID` — auto-generated by the wrapper on create if zero.
+- `createdAt` / `updatedAt` of type `time.Time` — auto-set by the wrapper (see below).
+- `bson:"field,omitempty"` for optional fields; `bson:"field,primary"` to mark an alternate
+  key for `Save()` (see [Document wrapper](#document-wrapper)).
+
+## CRUD (the everyday API)
+
+These package functions are the primary way to use mongopiet. The collection name is an
+explicit string; filters/updates are plain `bson`. All return typed results.
 
 ```go
-type User struct {
-	Username  string         	 `bson:"username,primary"`
-	CreatedAt time.Time          `bson:"createdAt"`
-	UpdatedAt time.Time          `bson:"updatedAt"`
-}
+// read
+user, err  := db.FindOne[User]("users", bson.M{"_id": id})         // *User; err on not found
+users, err := db.Find[User]("users", bson.M{"active": true})       // []*User
+n, err     := db.CountDocuments("users", bson.M{"active": true})   // int64
+
+// create
+_, err = db.InsertOne("users", &user)
+_, err = db.InsertMany("users", []interface{}{&a, &b})
+
+// update — note the signature: (collection, filter, set, unset, ...opts)
+_, err = db.UpdateOne("users", bson.M{"_id": id}, bson.M{"name": "new"}, nil)
+_, err = db.UpdateOne("users", bson.M{"_id": id}, bson.M{"name": "new"}, bson.M{"avatar": ""}) // $unset avatar
+_, err = db.UpdateMany("users", bson.M{"active": false}, bson.M{"archived": true}, nil)
+
+// delete
+_, err = db.DeleteOne("users", bson.M{"_id": id})
+_, err = db.DeleteMany("users", bson.M{"archived": true})
 ```
 
-### Create Model
+`set` is wrapped in `$set` and `unset` (when non-nil) in `$unset` for you — pass raw field
+maps, not `bson.M{"$set": ...}`.
 
-User will generate a collection named `users` in the database at creation of the first database entry
+> **Not-found:** `db.FindOne[T]` returns an error when nothing matches (`mongo.ErrNoDocuments`).
+> Check it explicitly:
+> ```go
+> user, err := db.FindOne[User]("users", bson.M{"_id": id})
+> if err == mongo.ErrNoDocuments {
+>     // 404
+> }
+> ```
+
+> **Updates don't error on zero matches.** A filter matching nothing is not an error — check
+> the result if you care:
+> ```go
+> res, err := db.UpdateOne("tokens", bson.M{"_id": id, "user": uid}, bson.M{"active": false}, nil)
+> if err != nil || res.ModifiedCount < 1 {
+>     // nothing was updated
+> }
+> ```
+
+### Aggregation
 
 ```go
-type User struct {
-	ID        primitive.ObjectID `bson:"_id"`
-	Name      string             `bson:"name"`
-	UpdatedAt time.Time          `bson:"updatedAt"`
-	CreatedAt time.Time          `bson:"createdAt"`
+pipeline := bson.A{
+    bson.D{{"$match", bson.D{{"relatedUser", id}}}},
+    bson.D{{"$group", bson.D{
+        {"_id", bson.D{{"$dateToString", bson.D{{"format", "%Y-%m-%d"}, {"date", "$createdAt"}}}}},
+        {"count", bson.D{{"$sum", 1}}},
+    }}},
 }
 
-type UserDoc = db.Document[UserDocument]
-type UserDocs = db.ManyDocuments[UserDocument]
+stats, err := db.Aggregate[DailyStat]("events", pipeline)
+// or with your own context/timeout:
+stats, err = db.AggregateCtx[DailyStat]("events", ctx, pipeline)
 ```
 
-### Create
+### Bulk writes
+
+The `bulk` package aliases the driver's write models so you don't import `mongo` directly:
 
 ```go
-func main() {
-	newUser := db.NewDoc(&User{
-		ID:        primitive.NewObjectID(),
-		Name:      "SNWZY",
-	})
+import "go.philip.id/mongopiet/pkg/bulk"
 
-	_, err := newUser.Create()
-	if err != nil {
-		log.Fatal(err)
-	}
+models := []bulk.Write{
+    &bulk.Insert{Document: bson.M{"x": 1}},
+    &bulk.Update{Filter: bson.M{"x": 1}, Update: bson.M{"$set": bson.M{"x": 2}}},
+    &bulk.Delete{Filter: bson.M{"x": 2}},
 }
+_, err := db.BulkWrite("test", models)
 ```
 
-### FindOne + Update
+Available models: `bulk.Insert`, `bulk.Update`, `bulk.UpdateMany`, `bulk.Delete`,
+`bulk.DeleteMany`, `bulk.Replace`, `bulk.Search`.
+
+### Pagination & sorting
+
+`pkg/opts` turns request query params (`page`, `limit`, `sort`) into `*options.FindOptions`:
 
 ```go
-func main() {
-	id, _ := primitive.ObjectIDFromHex("XXXXX")
-	user := &UserDoc{}
+import "go.philip.id/mongopiet/pkg/opts"
 
-	_, err = user.FindOne(bson.M{"_id": id})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	user.Model.Name = "SNWZY1"
-
-	user.Save()
-}
+opt := opts.QueryParam(r, "createdAt") // page/limit/sort from the request
+logs, err := db.Find[RequestLog]("logs", bson.M{"relatedUser": id}, opt)
 ```
 
-## TODO
+Or compute skip/limit yourself with `opts.SkipLimit(page, limit string)` /
+`opts.SkipLimitI(page, limit int)` (default limit 16).
 
-- Add propagation
-- Limits etc
+## Document wrapper
+
+For multi-step "load → mutate → persist" flows, the `Document[T]` wrapper tracks the original
+state and `Save()` writes only the changed fields. It's optional — most code uses the plain
+functions above. The wrapper derives the collection name from the struct: lowercased name + `s`
+(`User` → `users`).
+
+```go
+// create (auto-fills _id, createdAt, updatedAt if zero)
+doc := db.NewDoc(&User{Email: "a@b.c", Name: "SNWZY"})
+_, err := doc.Create()
+// shortcut: db.CreateDoc(&User{...}) does NewDoc + Create in one call
+
+// load → mutate → save (only changed fields are written; updatedAt is refreshed)
+u := &UserDoc{}
+if _, err := u.FindOne(bson.M{"_id": id}); err != nil { /* ... */ }
+u.Model.Name = "SNWZY1"
+_, err = u.Save()
+
+// many
+list := &UserDocs{}
+_, err = list.Find(bson.M{"active": true})
+```
+
+`Save()` locates the document by `_id`, or by the field tagged `bson:"...,primary"` if there's
+no `_id`. It always refreshes `updatedAt`.
+
+> **Wrapper not-found differs from the plain function:** `Document.FindOne` returns `nil, nil`
+> when no document matches (no `ErrNoDocuments`), whereas `db.FindOne[T]` returns the error.
+> Guard against a `nil` document before using `.Model`.
+
+> **Pointer fields & `Save()`:** the change-tracking copy is shallow, so mutations *through* a
+> pointer field may not be detected. For pointer-heavy updates prefer an explicit
+> `db.UpdateOne`. See [TODO.md](./TODO.md).
+
+## Conventions & patterns
+
+Patterns that recur across the services using mongopiet:
+
+- **Collection-name constants** per package (`const collBalance = "point_balance"`) instead of
+  string literals scattered around.
+- **Thin helper functions** wrapping `db.*` per model (`GetBalance`, `ListRewardConfigs`, …).
+- **Scoped queries for multi-tenant data** — always include the owner field in the filter,
+  e.g. `bson.M{"_id": id, "broadcaster": owner}`, especially for deletes/updates.
+- **`Masked()` projections** as a method on the model for API responses (omit secrets).
+
+## Caveats
+
+- Most functions run on a package-internal `context.TODO()`; `Find`/`Aggregate` use an internal
+  30s timeout. There's no per-call context except `AggregateCtx`. For full control, drop down to
+  `db.DB.Collection(name)` directly. See [TODO.md](./TODO.md) for the roadmap.
+
+## Subpackages
+
+| Package | Import                          | Description                         |
+| ------- | ------------------------------- | ----------------------------------- |
+| db      | `go.philip.id/mongopiet/pkg/db` | Typed CRUD, aggregation, bulk, docs |
+| opts    | `go.philip.id/mongopiet/pkg/opts` | Pagination / sort from requests   |
+| bulk    | `go.philip.id/mongopiet/pkg/bulk` | Bulk write model aliases          |
+
+## License
+
+Licensed under the [MIT License](./LICENSE).
